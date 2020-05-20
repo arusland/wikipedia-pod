@@ -23,19 +23,33 @@ object MainApp {
         val config = BotConfig.load("application.properties")
         val tgService = TelegramService(config)
         val parser = PageParser()
-        val pods = parser.getPods(2005, 6)
+        val pods = parser.getPods(2005, 9)
         val storage = UrlStorage(File("already_posted.txt")).load()
 
         pods.forEach { pod ->
             if (!storage.contains(pod.url)) {
                 try {
-                    tgService.sendImageMessage(config.channelId, pod.url, pod.caption)
+                    sendImage(tgService, pod, config.channelId)
                     storage.add(pod.url)
                     sleep(config.postSleep)
                 } catch (e: Exception) {
                     log.error("Error '{}' of posting pod: {}", e.message, pod)
                     throw e
                 }
+            }
+        }
+    }
+
+    private fun sendImage(tgService: TelegramService, pod: PodInfo, channelId: String) {
+        try {
+            tgService.sendImageMessage(channelId, pod.url, pod.caption)
+        } catch (e: Exception) {
+            if (e.message!!.contains("Bad Request:")) {
+                log.warn("Try to post thumb version of image: {}", pod.thumbUrl)
+
+                tgService.sendImageMessage(channelId, pod.thumbUrl, pod.caption)
+            } else {
+                throw e
             }
         }
     }

@@ -27,13 +27,14 @@ class PageParser {
 
     private fun elemToPod(elem: Element, pageUrl: URL): PodInfo? {
         val url = pageUrl.protocol + ":" + elem.select("img.thumbimage")[0].attr("src")
+        val thumbUrl = url.replace(THUMB_URL_PATTERN, "/1280px$1")
         val imageUrl = url.replace("/thumb/", "/").replace(CLEAN_URL_PATTERN, "")
         val imageNA = imageUrl.contains(IGNORE_IMAGE, true)
 
         if (!imageNA) {
             val caption = cleanCaption(elem.select(".thumbcaption")[0], pageUrl)
 
-            return PodInfo(url = imageUrl, caption = caption)
+            return PodInfo(url = imageUrl, thumbUrl = thumbUrl, caption = caption)
         }
 
         return null
@@ -59,6 +60,7 @@ class PageParser {
     companion object {
         const val IGNORE_IMAGE = "ImageNA.svg"
         val CLEAN_URL_PATTERN = Regex("/\\d+px[^/]+$")
+        val THUMB_URL_PATTERN = Regex("/\\d+px([^/]+)$")
         val DIV_PATTERN = Regex("<div .+?</div>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.MULTILINE))
         val SPAN_PATTERN = Regex("<span .+?>(.+)</span>")
         val TITLE_PATTERN = Regex(" title=.+?>")
