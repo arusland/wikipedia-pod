@@ -5,9 +5,10 @@ import org.junit.jupiter.api.Test
 class PageParserTest {
     @Test
     fun testGetPods() {
-        val images = PageParser().getPods(2012, 2)
+        val images = PageParser().getPods(2005, 5)
 
         images.forEach {
+            println(it.url)
             println(it.caption)
             println()
         }

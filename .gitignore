@@ -1,3 +1,5 @@
 target
 *.iml
 .idea
+application.properties
+already_posted.txt

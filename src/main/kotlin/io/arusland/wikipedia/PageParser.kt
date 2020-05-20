@@ -12,7 +12,7 @@ class PageParser {
     fun getPods(year: Int, month: Int): List<PodInfo> {
         try {
             val pageUrl = URL("https://ru.wikipedia.org/wiki/%D0%A8%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD:Potd/$year-" + monthToString(month))
-            log.info("Download page $pageUrl")
+            log.info("Download page {}", pageUrl)
 
             val html = pageUrl.openStream().use { String(it.readBytes()) }
             val doc = Jsoup.parse(html)
@@ -33,7 +33,7 @@ class PageParser {
         if (!imageNA) {
             val caption = cleanCaption(elem.select(".thumbcaption")[0], pageUrl)
 
-            return PodInfo(url = URL(imageUrl), caption = caption)
+            return PodInfo(url = imageUrl, caption = caption)
         }
 
         return null
@@ -58,7 +58,7 @@ class PageParser {
 
     companion object {
         const val IGNORE_IMAGE = "ImageNA.svg"
-        val CLEAN_URL_PATTERN = Regex("/[^/]+$")
+        val CLEAN_URL_PATTERN = Regex("/\\d+px[^/]+$")
         val DIV_PATTERN = Regex("<div .+?</div>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.MULTILINE))
         val SPAN_PATTERN = Regex("<span .+?>(.+)</span>")
         val TITLE_PATTERN = Regex(" title=.+?>")
