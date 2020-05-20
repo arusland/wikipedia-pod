@@ -1,13 +1,15 @@
 package io.arusland.wikipedia
 
-import io.arusland.wikipedia.io.arusland.wikipedia.PageParser
 import org.junit.jupiter.api.Test
 
 class PageParserTest {
     @Test
-    fun testParser() {
-        val images = PageParser().parse(2005, 3)
+    fun testGetPods() {
+        val images = PageParser().getPods(2012, 2)
 
-        images.forEach { println(it) }
+        images.forEach {
+            println(it.caption)
+            println()
+        }
     }
 }

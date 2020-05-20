@@ -1,30 +1,55 @@
-package io.arusland.wikipedia.io.arusland.wikipedia
+package io.arusland.wikipedia
 
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.slf4j.LoggerFactory
+import java.io.FileNotFoundException
 import java.net.URL
 
 class PageParser {
     private val log = LoggerFactory.getLogger(PageParser::class.java)
 
-    fun parse(year: Int, month: Int): List<String> {
-        val pageUrl = URL("https://ru.wikipedia.org/wiki/%D0%A8%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD:Potd/$year-" + monthToString(month))
-        log.info("Download page $pageUrl")
+    fun getPods(year: Int, month: Int): List<PodInfo> {
+        try {
+            val pageUrl = URL("https://ru.wikipedia.org/wiki/%D0%A8%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD:Potd/$year-" + monthToString(month))
+            log.info("Download page $pageUrl")
 
-        val html = pageUrl.openStream().use { String(it.readBytes()) }
-        val doc = Jsoup.parse(html)
+            val html = pageUrl.openStream().use { String(it.readBytes()) }
+            val doc = Jsoup.parse(html)
 
-        return doc.select(".thumbinner")
-                .map { elemToPod(it, pageUrl) }
-                .filter { !it.contains(IGNORE_IMAGE, true) }
+            return doc.select(".thumbinner")
+                    .map { elemToPod(it, pageUrl) }
+                    .filterNotNull()
+        } catch (e: FileNotFoundException) {
+            return emptyList()
+        }
     }
 
-    private fun elemToPod(elem: Element, pageUrl: URL): String {
+    private fun elemToPod(elem: Element, pageUrl: URL): PodInfo? {
         val url = pageUrl.protocol + ":" + elem.select("img.thumbimage")[0].attr("src")
+        val imageUrl = url.replace("/thumb/", "/").replace(CLEAN_URL_PATTERN, "")
+        val imageNA = imageUrl.contains(IGNORE_IMAGE, true)
 
-        return url.replace("/thumb/", "/")
-                .replace(Regex("/220px.+"), "")
+        if (!imageNA) {
+            val caption = cleanCaption(elem.select(".thumbcaption")[0], pageUrl)
+
+            return PodInfo(url = URL(imageUrl), caption = caption)
+        }
+
+        return null
+    }
+
+    private fun cleanCaption(elem: Element, pageUrl: URL): String {
+        var html = elem.html()
+        html = html.replace(DIV_PATTERN, "")
+        html = html.replace(TITLE_PATTERN, ">")
+        html = html.replace(CLASS_PATTERN, ">")
+        html = html.replace("\"/wiki/", '"' + pageUrl.toFullHost() + "/wiki/")
+        html = html.replace(SPAN_PATTERN, "$1")
+        html = html.replace(NE_LINK, "$1")
+        html = html.replace("\n", "")
+
+        return html
     }
 
     private fun monthToString(month: Int): String {
@@ -33,5 +58,11 @@ class PageParser {
 
     companion object {
         const val IGNORE_IMAGE = "ImageNA.svg"
+        val CLEAN_URL_PATTERN = Regex("/[^/]+$")
+        val DIV_PATTERN = Regex("<div .+?</div>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.MULTILINE))
+        val SPAN_PATTERN = Regex("<span .+?>(.+)</span>")
+        val TITLE_PATTERN = Regex(" title=.+?>")
+        val CLASS_PATTERN = Regex(" class=.+?>")
+        val NE_LINK = Regex("<a .+?redlink=1\">(.+)</a>")
     }
 }
