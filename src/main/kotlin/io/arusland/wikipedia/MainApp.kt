@@ -24,7 +24,7 @@ object MainApp {
         val tgService = TelegramService(config)
         val parser = PageParser()
         val storage = UrlStorage(File("already_posted.txt")).load()
-        var year = 2006
+        var year = 2007
         var month = 8
 
         while (year < 2020 || month < 5) {
