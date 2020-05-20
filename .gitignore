@@ -3,3 +3,4 @@ target
 .idea
 application.properties
 already_posted.txt
+logs

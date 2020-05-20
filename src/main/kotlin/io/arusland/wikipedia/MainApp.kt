@@ -23,19 +23,35 @@ object MainApp {
         val config = BotConfig.load("application.properties")
         val tgService = TelegramService(config)
         val parser = PageParser()
-        val pods = parser.getPods(2005, 9)
         val storage = UrlStorage(File("already_posted.txt")).load()
+        var year = 2006
+        var month = 8
 
-        pods.forEach { pod ->
-            if (!storage.contains(pod.url)) {
-                try {
-                    sendImage(tgService, pod, config.channelId)
-                    storage.add(pod.url)
-                    sleep(config.postSleep)
-                } catch (e: Exception) {
-                    log.error("Error '{}' of posting pod: {}", e.message, pod)
-                    throw e
+        while (year < 2020 || month < 5) {
+            log.info("Parse new year {}, month: {}", year, month)
+
+            val pods = parser.getPods(year, month)
+
+            if (pods.isNotEmpty()) {
+                pods.forEach { pod ->
+                    if (!storage.contains(pod.url)) {
+                        try {
+                            sendImage(tgService, pod, config.channelId)
+                            storage.add(pod.url)
+                            sleep(config.postSleep)
+                        } catch (e: Exception) {
+                            log.error("Posting failed with error '{}', year: {}, month: {}, pod: {}", e.message, year, month, pod)
+                            throw e
+                        }
+                    }
                 }
+            }
+
+            month++
+
+            if (month > 12) {
+                year++
+                month = 1
             }
         }
     }
