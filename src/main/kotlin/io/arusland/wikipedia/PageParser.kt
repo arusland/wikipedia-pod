@@ -46,11 +46,13 @@ class PageParser {
         html = html.replace(TITLE_PATTERN, ">")
         html = html.replace(CLASS_PATTERN, ">")
         html = html.replace("\"/wiki/", '"' + pageUrl.toFullHost() + "/wiki/")
-        html = html.replace(SPAN_PATTERN, "$1")
+        html = html.replace(SPAN_PATTERN, "")
         html = html.replace(SPAN2_PATTERN, "")
+        html = html.replace(SMALL_PATTERN, "")
         html = html.replace(NE_LINK, "$1")
         html = html.replace(SUP_PATTERN, "$1")
         html = html.replace("\n", "")
+        html = html.replace(BR_PATTERN, "\n")
         html = html.replace("&nbsp;", " ")
 
         return html
@@ -65,11 +67,13 @@ class PageParser {
         val CLEAN_URL_PATTERN = Regex("/\\d+px[^/]+$")
         val THUMB_URL_PATTERN = Regex("/\\d+px([^/]+)$")
         val DIV_PATTERN = Regex("<div .+?</div>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.MULTILINE))
-        val SPAN_PATTERN = Regex("<span .+?>(.+?)</span>")
+        val SPAN_PATTERN = Regex("<span .+?>")
         val SPAN2_PATTERN = Regex("</*span>")
+        val SMALL_PATTERN = Regex("</*small>")
+        val BR_PATTERN = Regex("<br>")
         val SUP_PATTERN = Regex("<sup>(.+)</sup>")
         val TITLE_PATTERN = Regex(" title=.+?>")
         val CLASS_PATTERN = Regex(" class=.+?>")
-        val NE_LINK = Regex("<a .+?redlink=1\">(.+)</a>")
+        val NE_LINK = Regex("<a .+?redlink=1\">(.+?)</a>")
     }
 }
