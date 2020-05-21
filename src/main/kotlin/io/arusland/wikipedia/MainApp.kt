@@ -24,8 +24,8 @@ object MainApp {
         val tgService = TelegramService(config)
         val parser = PageParser()
         val storage = UrlStorage(File("already_posted.txt")).load()
-        var year = 2013
-        var month = 1
+        var year = 2014
+        var month = 7
 
         while (year < 2020 || month < 5) {
             log.info("Parse new year {}, month: {}", year, month)
@@ -41,6 +41,9 @@ object MainApp {
                             sleep(config.postSleep)
                         } catch (e: Exception) {
                             log.error("Posting failed with error '{}', year: {}, month: {}, pod: {}", e.message, year, month, pod)
+
+                            tgService.sendAlertMessage(makeMarkDownMessage(pod, e))
+
                             throw e
                         }
                     }
@@ -54,6 +57,14 @@ object MainApp {
                 month = 1
             }
         }
+    }
+
+    private fun makeMarkDownMessage(pod: PodInfo, e: Exception): String {
+        return """⛔️ Error sending pod
+            |*${e.message}*
+            |
+            |```$pod```
+        """.trimMargin()
     }
 
     private fun sendImage(tgService: TelegramService, pod: PodInfo, channelId: String) {

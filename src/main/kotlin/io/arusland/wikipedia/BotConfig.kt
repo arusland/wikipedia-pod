@@ -25,6 +25,9 @@ class BotConfig private constructor(prop: Properties) {
     val channelId: String
         get() = getProperty("channel.chatId")
 
+    val alertChannelId: String
+        get() = getProperty("alert.chatId")
+
     private fun getProperty(key: String): String {
         return Validate.notNull(props.getProperty(key),
                 "Configuration not found for key: $key")
