@@ -1,21 +1,25 @@
 package io.arusland.wikipedia
 
-import org.apache.commons.lang3.StringUtils
+import org.apache.commons.lang3.StringUtils.isNotBlank
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.Thread.sleep
 import java.net.Authenticator
 import java.net.PasswordAuthentication
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+
 
 object MainApp {
     private val log = LoggerFactory.getLogger(MainApp::class.java)
+    private const val POST_TIME_HOUR = 10
 
     @JvmStatic
     fun main(args: Array<String>) {
         val socksUsername = System.getProperty("java.net.socks.username")
         val socksPassword = System.getProperty("java.net.socks.password")
 
-        if (StringUtils.isNotBlank(socksUsername) && StringUtils.isNotBlank(socksPassword)) {
+        if (isNotBlank(socksUsername) && isNotBlank(socksPassword)) {
             log.warn("using SOCKS: socksUsername: $socksUsername")
             Authenticator.setDefault(ProxyAuth(socksUsername, socksPassword))
         }
@@ -24,38 +28,75 @@ object MainApp {
         val tgService = TelegramService(config)
         val parser = PageParser()
         val storage = UrlStorage(File("already_posted.txt")).load()
-        var year = 2014
+        var year = 2015
         var month = 7
 
-        while (year < 2020 || month < 5) {
+        while (true) {
+            var now = LocalDateTime.now()
             log.info("Parse new year {}, month: {}", year, month)
+            val currentMonth = year >= now.year && month >= now.month.value
 
-            val pods = parser.getPods(year, month)
+            if (currentMonth) {
+                val nextTime = now.withHour(POST_TIME_HOUR).withMinute(0)
 
-            if (pods.isNotEmpty()) {
-                pods.forEach { pod ->
-                    if (!storage.contains(pod.url)) {
-                        try {
-                            sendImage(tgService, pod, config.channelId)
-                            storage.add(pod.url)
-                            sleep(config.postSleep)
-                        } catch (e: Exception) {
-                            log.error("Posting failed with error '{}', year: {}, month: {}, pod: {}", e.message, year, month, pod)
+                if (nextTime > now) {
+                    sleepUntil(nextTime)
+                }
+            }
 
-                            tgService.sendAlertMessage(makeMarkDownMessage(pod, e))
+            val pods = parser.getPods(year, month).let {
+                if (currentMonth) {
+                    val last = Math.min(now.dayOfMonth, it.size)
+                    log.info("subList to {}, list size: {}", last, it.size)
+                    it.subList(0, last)
+                } else it
+            }
 
-                            throw e
-                        }
+            var atLeastOne = false
+
+            pods.forEach { pod ->
+                if (!storage.contains(pod.url)) {
+                    try {
+                        sendImage(tgService, pod, config.channelId)
+                        storage.add(pod.url)
+                        sleep(config.postSleep)
+                        atLeastOne = true
+                    } catch (e: Exception) {
+                        log.error("Posting failed with error '{}', year: {}, month: {}, pod: {}", e.message, year, month, pod)
+
+                        tgService.sendAlertMessage(makeMarkDownMessage(pod, e))
+
+                        throw e
                     }
                 }
             }
 
-            month++
+            if (currentMonth) {
+                now = LocalDateTime.now()
+                month = now.month.value
+                year = now.year
 
-            if (month > 12) {
-                year++
-                month = 1
+                if (!atLeastOne) {
+                    sleepUntil(now.withHour(POST_TIME_HOUR).withMinute(0).plusDays(1))
+                }
+            } else {
+                month++
+
+                if (month > 12) {
+                    year++
+                    month = 1
+                }
             }
+        }
+    }
+
+    private fun sleepUntil(nextTime: LocalDateTime) {
+        val now = LocalDateTime.now()
+        val diff = ChronoUnit.NANOS.between(now, nextTime)
+
+        if (diff > 0) {
+            log.info("Sleep until {}", nextTime)
+            sleep(diff)
         }
     }
 
