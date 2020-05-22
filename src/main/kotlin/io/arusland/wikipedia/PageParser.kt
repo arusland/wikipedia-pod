@@ -71,7 +71,7 @@ class PageParser {
         val SPAN2_PATTERN = Regex("</*span>")
         val SMALL_PATTERN = Regex("</*small>")
         val BR_PATTERN = Regex("<br>")
-        val SUP_PATTERN = Regex("</*sup>")
+        val SUP_PATTERN = Regex("</*su(p|b)>")
         val TITLE_PATTERN = Regex(" title=.+?>")
         val CLASS_PATTERN = Regex(" class=.+?>")
         val NE_LINK = Regex("<a .+?redlink=1\">(.+?)</a>")

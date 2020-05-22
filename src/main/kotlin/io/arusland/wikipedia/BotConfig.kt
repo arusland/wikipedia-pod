@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.Validate
 import org.slf4j.LoggerFactory
 import java.io.*
+import java.time.LocalDate
 import java.util.*
 
 /**
@@ -27,6 +28,12 @@ class BotConfig private constructor(prop: Properties) {
 
     val alertChannelId: String
         get() = getProperty("alert.chatId")
+
+    val startYear: Int
+        get() = getProperty("start.year", LocalDate.now().year.toString()).toInt()
+
+    val startMonth: Int
+        get() = getProperty("start.month", LocalDate.now().monthValue.toString()).toInt()
 
     private fun getProperty(key: String): String {
         return Validate.notNull(props.getProperty(key),
