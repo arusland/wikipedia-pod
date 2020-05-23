@@ -10,7 +10,7 @@ import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
-
+import kotlin.math.min
 
 object MainApp {
     private val log = LoggerFactory.getLogger(MainApp::class.java)
@@ -38,8 +38,8 @@ object MainApp {
         var month = config.startMonth
 
         while (true) {
-            var now = getNow()
-            year = Math.min(year, now.year)
+            val now = getNow()
+            year = min(year, now.year)
 
             if (year == now.year && month > now.monthValue) {
                 month = now.monthValue
@@ -50,7 +50,7 @@ object MainApp {
             val currentMonth = year == now.year && month == now.month.value
 
             if (currentMonth) {
-                val nextTime = now.withHour(POST_TIME_HOUR).withMinute(0)
+                val nextTime = adjustPostTime(now)
 
                 if (nextTime > now) {
                     sleepUntil(nextTime)
@@ -59,13 +59,11 @@ object MainApp {
 
             val pods = parser.getPods(year, month).let {
                 if (currentMonth) {
-                    val last = Math.min(now.dayOfMonth, it.size)
+                    val last = min(now.dayOfMonth, it.size)
                     log.info("subList to {}, list size: {}", last, it.size)
                     it.subList(0, last)
                 } else it
             }
-
-            var atLeastOne = false
 
             pods.forEach { pod ->
                 if (!storage.contains(pod.url)) {
@@ -73,7 +71,6 @@ object MainApp {
                         sendImage(tgService, pod, config.channelId)
                         storage.add(pod.url)
                         sleep(config.postSleep)
-                        atLeastOne = true
                     } catch (e: Exception) {
                         log.error("Posting failed with error '{}', year: {}, month: {}, pod: {}", e.message, year, month, pod)
 
@@ -85,13 +82,11 @@ object MainApp {
             }
 
             if (currentMonth) {
-                now = getNow()
+                sleepUntil(adjustPostTime(getNow()).plusDays(1))
 
-                if (!atLeastOne) {
-                    sleepUntil(now.withHour(POST_TIME_HOUR)
-                            .withMinute(0)
-                            .withSecond(0)
-                            .plusDays(1))
+                getNow().let {
+                    year = it.year
+                    month = it.monthValue
                 }
             } else {
                 month++
@@ -102,6 +97,13 @@ object MainApp {
                 }
             }
         }
+    }
+
+    private fun adjustPostTime(now: OffsetDateTime): OffsetDateTime {
+        return now.withHour(POST_TIME_HOUR)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0)
     }
 
     private fun sleepUntil(nextTime: OffsetDateTime) {
