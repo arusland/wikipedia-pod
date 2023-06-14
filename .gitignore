@@ -4,3 +4,4 @@ target
 application.properties
 logs
 secvars.sh
+/dependency-reduced-pom.xml
