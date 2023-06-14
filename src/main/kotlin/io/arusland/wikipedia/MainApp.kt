@@ -18,6 +18,7 @@ object MainApp {
     private const val RETRY_TIMEOUT: Long = 60 * 1000
     private const val RETRY_ERROR = "Too Many Requests: retry after"
     private val TIME_ZONE = TimeZone.getTimeZone("GMT+3:00")
+    private val exitOnDone = System.getProperty("exitOnDone", "true").toBoolean()
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -65,6 +66,8 @@ object MainApp {
                 } else it
             }
 
+            log.info("Found {} pods", pods.size)
+
             pods.forEach { pod ->
                 if (!storage.contains(pod.url)) {
                     try {
@@ -82,6 +85,11 @@ object MainApp {
             }
 
             if (currentMonth) {
+                if (exitOnDone) {
+                    log.info("Exit program")
+                    return
+                }
+
                 sleepUntil(adjustPostTime(getNow()).plusDays(1))
 
                 getNow().let {
