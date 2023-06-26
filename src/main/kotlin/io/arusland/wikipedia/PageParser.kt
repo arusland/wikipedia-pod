@@ -2,6 +2,8 @@ package io.arusland.wikipedia
 
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import org.jsoup.nodes.Node
+import org.jsoup.nodes.TextNode
 import org.slf4j.LoggerFactory
 import java.io.FileNotFoundException
 import java.net.URL
@@ -41,7 +43,7 @@ class PageParser {
     }
 
     private fun cleanCaption(elem: Element, pageUrl: URL): String {
-        var html = elem.html()
+        var html = elementAsHtml(elem)
         html = html.replace(DIV_PATTERN, "")
         html = html.replace(TITLE_PATTERN, ">")
         html = html.replace(CLASS_PATTERN, ">")
@@ -49,14 +51,26 @@ class PageParser {
         html = html.replace(SPAN_PATTERN, "")
         html = html.replace(SPAN2_PATTERN, "")
         html = html.replace(SMALL_PATTERN, "")
-        html = html.replace(NE_LINK, "$1")
+        html = html.replace(SUP_PATTERN_MAIN, "")
         html = html.replace(SUP_PATTERN, "")
+        html = html.replace(NE_LINK, "")
         html = html.replace("\n", "")
         html = html.replace(BR_PATTERN, "\n")
         html = html.replace("&nbsp;", " ")
 
         return html
     }
+
+    private fun elementAsHtml(elem: Element): String {
+        // remain only text and links
+        elem.childNodes().filter { !allowedNodes(it) }
+                .toList()
+                .forEach { node -> node.remove() }
+
+        return elem.html()
+    }
+
+    private fun allowedNodes(node: Node?) = node is Element && (node.tagName() == "a" || node.tagName() == "i") || node is TextNode
 
     private fun monthToString(month: Int): String {
         return if (month < 10) "0$month" else "$month"
@@ -72,8 +86,9 @@ class PageParser {
         val SMALL_PATTERN = Regex("</*small>")
         val BR_PATTERN = Regex("<br>")
         val SUP_PATTERN = Regex("</*su(p|b)>")
+        val SUP_PATTERN_MAIN = Regex("<su(p|b) .+?>")
         val TITLE_PATTERN = Regex(" title=.+?>")
         val CLASS_PATTERN = Regex(" class=.+?>")
-        val NE_LINK = Regex("<a .+?redlink=1\">(.+?)</a>")
+        val NE_LINK = Regex("<a .+?redlink=1\"(.+?)</a>")
     }
 }
