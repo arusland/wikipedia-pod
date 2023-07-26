@@ -19,7 +19,7 @@ class PageParser {
             val html = pageUrl.openStream().use { String(it.readBytes()) }
             val doc = Jsoup.parse(html)
 
-            return doc.select(".thumbinner")
+            return doc.select("figure")
                     .map { elemToPod(it, pageUrl) }
                     .filterNotNull()
         } catch (e: FileNotFoundException) {
@@ -28,13 +28,13 @@ class PageParser {
     }
 
     private fun elemToPod(elem: Element, pageUrl: URL): PodInfo? {
-        val url = pageUrl.protocol + ":" + elem.select("img.thumbimage")[0].attr("src")
+        val url = pageUrl.protocol + ":" + elem.select("img")[0].attr("src")
         val thumbUrl = url.replace(THUMB_URL_PATTERN, "/1280px$1")
         val imageUrl = url.replace("/thumb/", "/").replace(CLEAN_URL_PATTERN, "")
         val imageNA = imageUrl.contains(IGNORE_IMAGE, true)
 
         if (!imageNA) {
-            val caption = cleanCaption(elem.select(".thumbcaption")[0], pageUrl)
+            val caption = cleanCaption(elem.select("figcaption")[0], pageUrl)
 
             return PodInfo(url = imageUrl, thumbUrl = thumbUrl, caption = caption)
         }

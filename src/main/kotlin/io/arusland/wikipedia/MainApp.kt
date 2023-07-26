@@ -37,6 +37,7 @@ object MainApp {
         val storage = UrlStorage(File("already_posted.txt")).load()
         var year = config.startYear
         var month = config.startMonth
+        var sentImagesCount = 0
 
         while (true) {
             val now = getNow()
@@ -74,6 +75,7 @@ object MainApp {
                         sendImage(tgService, pod, config.channelId)
                         storage.add(pod.url)
                         sleep(config.postSleep)
+                        sentImagesCount++
                     } catch (e: Exception) {
                         log.error("Posting failed with error '{}', year: {}, month: {}, pod: {}", e.message, year, month, pod)
 
@@ -86,6 +88,10 @@ object MainApp {
 
             if (currentMonth) {
                 if (exitOnDone) {
+                    if (sentImagesCount == 0) {
+                        log.warn("No images sent")
+                        tgService.sendAlertMessage("Wikipedia pod: No images sent")
+                    }
                     log.info("Exit program")
                     return
                 }
