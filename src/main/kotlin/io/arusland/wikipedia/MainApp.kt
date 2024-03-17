@@ -140,9 +140,9 @@ object MainApp {
         """.trimMargin()
     }
 
-    private fun sendImage(tgService: TelegramService, pod: PodInfo, channelId: String, inRetry: Boolean = false) {
+    private fun sendImage(tgService: TelegramService, pod: PodInfo, channelId: String, inRetry: Boolean = false, disableNotification: Boolean = false) {
         try {
-            tgService.sendImageMessage(channelId, pod.url, pod.caption)
+            tgService.sendImageMessage(channelId, pod.url, pod.caption, disableNotification = disableNotification)
         } catch (e: Exception) {
             if (!retryIf(inRetry, e, tgService, pod, channelId)) {
                 if (e.message!!.contains("Bad Request:")) {

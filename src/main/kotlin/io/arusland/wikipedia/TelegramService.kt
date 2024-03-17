@@ -9,12 +9,13 @@ import org.slf4j.LoggerFactory
 class TelegramService(private val botConfig: BotConfig) {
     private val log = LoggerFactory.getLogger(TelegramService::class.java)
 
-    fun sendImageMessage(chatId: String, imgUrl: String, caption: String) {
+    fun sendImageMessage(chatId: String, imgUrl: String, caption: String, disableNotification: Boolean = false) {
         log.info("Send to {}, image {}, caption: {}", chatId, imgUrl, caption)
 
         val request = SendPhoto(chatId, imgUrl)
         request.caption(caption)
         request.parseMode(ParseMode.HTML)
+        request.disableNotification(disableNotification)
 
         val api = TelegramBot(botConfig.botToken)
         val sendResponse = api.execute(request)

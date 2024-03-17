@@ -13,18 +13,24 @@ class PageParser {
 
     fun getPods(year: Int, month: Int): List<PodInfo> {
         try {
-            val pageUrl = URL("https://ru.wikipedia.org/wiki/%D0%A8%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD:Potd/$year-" + monthToString(month))
+            val pageUrl = URL(
+                "https://ru.wikipedia.org/wiki/%D0%A8%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD:Potd/$year-" + monthToString(month)
+            )
             log.info("Download page {}", pageUrl)
-
             val html = pageUrl.openStream().use { String(it.readBytes()) }
-            val doc = Jsoup.parse(html)
 
-            return doc.select("figure")
-                    .map { elemToPod(it, pageUrl) }
-                    .filterNotNull()
+            return getPods(html, pageUrl)
         } catch (e: FileNotFoundException) {
             return emptyList()
         }
+    }
+
+    fun getPods(html: String, pageUrl: URL): List<PodInfo> {
+        val doc = Jsoup.parse(html)
+
+        return doc.select("figure")
+            .map { elemToPod(it, pageUrl) }
+            .filterNotNull()
     }
 
     private fun elemToPod(elem: Element, pageUrl: URL): PodInfo? {
@@ -63,20 +69,51 @@ class PageParser {
 
     private fun elementAsHtml(elem: Element): String {
         // remain only text and links
-        elem.childNodes().filter { !allowedNodes(it) }
-                .toList()
-                .forEach { node -> node.remove() }
-
-        return elem.html()
+        return cleanNodes(elem).html()
     }
 
-    private fun allowedNodes(node: Node?) = node is Element && (node.tagName() == "a" || node.tagName() == "i") || node is TextNode
+    private fun allowedNodes(node: Node?) =
+        node is Element && (node.tagName() == "a" || node.tagName() == "i") || node is TextNode
+
+    private fun <T> cleanNodes(elem: T): T where T : Node {
+        // remove edit links
+        // <i><a href="/w/index.php?title=Gryphaea_arcuata&amp;action=edit&amp;redlink=1">Gryphaea arcuata</a></> => <i>Gryphaea arcuata</i>
+        elem.childNodes().filter { child -> isActionEditLinkElem(child) || isSpanElem(child) }
+            .forEach { child -> child.replaceWith(getChildIf(child)) }
+
+        elem.childNodes()
+            .map { cleanNodes(it) }
+            .filter { !allowedNodes(it) }
+            .toList()
+            .forEach { node -> node.remove() }
+
+        return elem
+    }
+
+    private fun getChildIf(node: Node): Node =
+        if (isActionEditLinkElem(node) || isSpanElem(node))
+            getChildIf(node.childNode(0))
+        else
+            node
+
+    /**
+     * Return true when child is a link to edit page
+     *
+     * Example: <a href="/w/index.php?title=Gryphaea_arcuata&amp;action=edit&amp;redlink=1" class="new">Gryphaea arcuata</a>
+     */
+    private fun isActionEditLinkElem(node: Node?) =
+        node is Element && node.tagName() == "a"
+                && node.attr("href").contains("action=edit")
+                && node.childNodeSize() == 1
+
+    private fun isSpanElem(child: Node?): Boolean =
+        child is Element && child.tagName() == "span" && child.childNodeSize() == 1
 
     private fun monthToString(month: Int): String {
         return if (month < 10) "0$month" else "$month"
     }
 
-    companion object {
+    private companion object {
         const val IGNORE_IMAGE = "ImageNA.svg"
         val CLEAN_URL_PATTERN = Regex("/\\d+px[^/]+$")
         val THUMB_URL_PATTERN = Regex("/\\d+px([^/]+)$")
