@@ -42,7 +42,7 @@ class PageParser {
         if (!imageNA) {
             val caption = cleanCaption(elem.select("figcaption")[0], pageUrl)
 
-            return PodInfo(url = imageUrl, thumbUrl = thumbUrl, caption = caption)
+            return PodInfo(url = imageUrl, thumbUrl = thumbUrl, originalImageUrl = url, caption = caption)
         }
 
         return null

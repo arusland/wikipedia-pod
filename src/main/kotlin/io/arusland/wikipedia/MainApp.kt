@@ -77,7 +77,7 @@ object MainApp {
                         sleep(config.postSleep)
                         sentImagesCount++
                     } catch (e: Exception) {
-                        log.error("Posting failed with error '{}', year: {}, month: {}, pod: {}", e.message, year, month, pod)
+                        log.error("Posting failed with error '{}', year: {}, month: {}, pod: {}", e.message, year, month, pod, e)
 
                         tgService.sendAlertMessage(makeMarkDownMessage(pod, e))
 
@@ -144,16 +144,16 @@ object MainApp {
         try {
             tgService.sendImageMessage(channelId, pod.url, pod.caption, disableNotification = disableNotification)
         } catch (e: Exception) {
+            log.error("Error sending main image: {}", pod.url, e)
             if (!retryIf(inRetry, e, tgService, pod, channelId)) {
                 if (e.message!!.contains("Bad Request:")) {
-                    sleep(1000)
-                    log.warn("Try to post thumb version of image: {}", pod.thumbUrl)
-
-                    try {
-                        tgService.sendImageMessage(channelId, pod.thumbUrl, pod.caption)
-                    } catch (e2: Exception) {
-                        if (!retryIf(inRetry, e2, tgService, pod, channelId)) {
-                            throw e
+                    listOf(pod.thumbUrl, pod.originalImageUrl).forEach { backupUrl ->
+                        sleep(1000)
+                        log.warn("Try to send backup version of image: {}", backupUrl)
+                        try {
+                            tgService.sendImageMessage(channelId, backupUrl, pod.caption, disableNotification = false)
+                        } catch (e2: Exception) {
+                            log.error("Error sending backup image: {}", backupUrl, e2)
                         }
                     }
                 } else {
