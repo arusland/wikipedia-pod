@@ -147,15 +147,19 @@ object MainApp {
             log.error("Error sending main image: {}", pod.url, e)
             if (!retryIf(inRetry, e, tgService, pod, channelId)) {
                 if (e.message!!.contains("Bad Request:")) {
+                    val errors = mutableListOf<Exception>()
                     listOf(pod.thumbUrl, pod.originalImageUrl).forEach { backupUrl ->
                         sleep(1000)
                         log.warn("Try to send backup version of image: {}", backupUrl)
                         try {
-                            tgService.sendImageMessage(channelId, backupUrl, pod.caption, disableNotification = false)
+                            tgService.sendImageMessage(channelId, backupUrl, pod.caption, disableNotification = true)
+                            errors.clear()
                         } catch (e2: Exception) {
+                            errors.add(e2)
                             log.error("Error sending backup image: {}", backupUrl, e2)
                         }
                     }
+                    errors.lastOrNull()?.let { throw it }
                 } else {
                     throw e
                 }
