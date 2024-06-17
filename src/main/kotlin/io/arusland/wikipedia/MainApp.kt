@@ -152,8 +152,9 @@ object MainApp {
                         sleep(1000)
                         log.warn("Try to send backup version of image: {}", backupUrl)
                         try {
-                            tgService.sendImageMessage(channelId, backupUrl, pod.caption, disableNotification = true)
+                            tgService.sendImageMessage(channelId, backupUrl, pod.caption, disableNotification = false)
                             errors.clear()
+                            return
                         } catch (e2: Exception) {
                             errors.add(e2)
                             log.error("Error sending backup image: {}", backupUrl, e2)
