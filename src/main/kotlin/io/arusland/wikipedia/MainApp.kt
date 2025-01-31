@@ -59,12 +59,18 @@ object MainApp {
                 }
             }
 
-            val pods = parser.getPods(year, month).let {
-                if (currentMonth) {
-                    val last = min(now.dayOfMonth, it.size)
-                    log.info("subList to {}, list size: {}", last, it.size)
-                    it.subList(0, last)
-                } else it
+            val pods = try {
+                parser.getPods(year, month).let {
+                    if (currentMonth) {
+                        val last = min(now.dayOfMonth, it.size)
+                        log.info("subList to {}, list size: {}", last, it.size)
+                        it.subList(0, last)
+                    } else it
+                }
+            } catch (e: Exception) {
+                log.error("Error parsing page", e)
+                tgService.sendAlertMessage(makeMarkDownMessage(e))
+                throw e
             }
 
             log.info("Found {} pods", pods.size)
@@ -137,6 +143,12 @@ object MainApp {
             |*${e.message}*
             |
             |```$pod```
+        """.trimMargin()
+    }
+
+    private fun makeMarkDownMessage(e: Exception): String {
+        return """⛔️ Error getting pod
+            |*${e.message}*
         """.trimMargin()
     }
 
