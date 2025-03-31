@@ -26,15 +26,24 @@ class PageParser {
     }
 
     fun getPods(html: String, pageUrl: URL): List<PodInfo> {
-        val doc = Jsoup.parse(html)
+        try {
+            val doc = Jsoup.parse(html)
 
-        return doc.select("figure")
-            .map { elemToPod(it, pageUrl) }
-            .filterNotNull()
+            return doc.select("figure")
+                .mapNotNull { element -> elemToPod(element, pageUrl) }
+        }catch (ex: Exception) {
+            log.error("Html parsing failed: {}", html, ex)
+            throw ex
+        }
     }
 
     private fun elemToPod(elem: Element, pageUrl: URL): PodInfo? {
-        val url = pageUrl.protocol + ":" + elem.select("img")[0].attr("src")
+        val images = elem.select("img")
+        if (images.isEmpty()) {
+            log.warn("No image found in element: {}", elem)
+            return null
+        }
+        val url = pageUrl.protocol + ":" + images[0].attr("src")
         val thumbUrl = url.replace(THUMB_URL_PATTERN, "/1280px$1")
         val imageUrl = url.replace("/thumb/", "/").replace(CLEAN_URL_PATTERN, "")
         val imageNA = imageUrl.contains(IGNORE_IMAGE, true)
