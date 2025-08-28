@@ -11,19 +11,24 @@ import java.net.URL
 class PageParser {
     private val log = LoggerFactory.getLogger(PageParser::class.java)
 
-    fun getPods(year: Int, month: Int): List<PodInfo> {
-        try {
-            val pageUrl = URL(
-                "https://ru.wikipedia.org/wiki/%D0%A8%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD:Potd/$year-" + monthToString(month)
-            )
-            log.info("Download page {}", pageUrl)
-            val html = pageUrl.openStream().use { String(it.readBytes()) }
+fun getPods(year: Int, month: Int): List<PodInfo> {
+    try {
+        val pageUrl = URL(
+            "https://ru.wikipedia.org/wiki/%D0%A8%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD:Potd/$year-" + monthToString(month)
+        )
+        log.info("Download page {}", pageUrl)
+        val connection = pageUrl.openConnection()
+        connection.setRequestProperty(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/142.0"
+        )
+        val html = connection.getInputStream().use { String(it.readBytes()) }
 
-            return getPods(html, pageUrl)
-        } catch (e: FileNotFoundException) {
-            return emptyList()
-        }
+        return getPods(html, pageUrl)
+    } catch (e: FileNotFoundException) {
+        return emptyList()
     }
+}
 
     fun getPods(html: String, pageUrl: URL): List<PodInfo> {
         try {
