@@ -50,7 +50,9 @@ fun getPods(year: Int, month: Int): List<PodInfo> {
         }
         val url = pageUrl.protocol + ":" + images[0].attr("src")
         val thumbUrl = url.replace(THUMB_URL_PATTERN, "/1280px$1")
-        val imageUrl = url.replace("/thumb/", "/").replace(CLEAN_URL_PATTERN, "")
+        val imageUrl = url.replace("/thumb/", "/")
+            .replace("//thumb.", "//upload.")
+            .replace(CLEAN_URL_PATTERN, "")
         val imageNA = imageUrl.contains(IGNORE_IMAGE, true)
 
         if (!imageNA) {

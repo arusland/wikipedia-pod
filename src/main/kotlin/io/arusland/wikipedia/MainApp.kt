@@ -78,7 +78,7 @@ object MainApp {
             pods.forEach { pod ->
                 if (!storage.contains(pod.url)) {
                     try {
-                        sendImage(tgService, pod, config.channelId)
+                        sendImage(tgService, pod, config.channelId, disableNotification = false)
                         storage.add(pod.url)
                         sleep(config.postSleep)
                         sentImagesCount++
@@ -88,6 +88,13 @@ object MainApp {
                         tgService.sendAlertMessage(makeMarkDownMessage(pod, e))
 
                         throw e
+                    }
+
+                    if (sentImagesCount >= 5) {
+                        // if the verification of previously sent images fails, the bot will send too many images, so it must be stopped
+                        log.warn("Too many images!")
+                        tgService.sendAlertMessage("Wikipedia pod: Too many images! Stopped")
+                        return
                     }
                 }
             }
