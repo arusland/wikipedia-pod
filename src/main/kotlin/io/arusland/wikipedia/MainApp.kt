@@ -50,15 +50,6 @@ object MainApp {
             log.info("Parse new year {}, month: {}", year, month)
 
             val currentMonth = year == now.year && month == now.month.value
-
-            if (currentMonth) {
-                val nextTime = adjustPostTime(now)
-
-                if (nextTime > now) {
-                    sleepUntil(nextTime)
-                }
-            }
-
             val pods = try {
                 parser.getPods(year, month).let {
                     if (currentMonth) {
